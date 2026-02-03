@@ -1,6 +1,6 @@
 import psycopg2
 
-from util import Digest
+from subs.servelamb.util import Digest
 from .db_cmd import DbCmd
 
 
