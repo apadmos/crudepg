@@ -1,8 +1,8 @@
 import json
 import re
 
-from .db_table_definition import DbTableDefinition
 from .db_cmd import DbCmd
+from .db_table_definition import DbTableDefinition
 
 
 class PgCmdTranslator(object):
@@ -13,7 +13,7 @@ class PgCmdTranslator(object):
             hit = match[0]
             return f"%({hit[1:]})s"
 
-        sql_cmd = re.sub(r"@\w+", replacement, sql_cmd)
+        sql_cmd = re.sub(r"[@:?]\w+", replacement, sql_cmd)
 
         if vals:
             flattened = json.dumps(vals, default=str)
@@ -138,11 +138,12 @@ class PgCmdTranslator(object):
         return self.cmd_str(cmd, params)
 
     def get_table_schema(self, catalog: str, schema_name, table_name):
-        sql = """SELECT * From information_schema.columns
-                WHERE table_schema = %(schema_name)s
-                AND table_catalog =  %(table_catalog)s
-                AND table_name = %(table_name)s
-                ORDER BY table_name, column_name;"""
+        sql = """SELECT *
+                 From information_schema.columns
+                 WHERE table_schema = %(schema_name)s
+                   AND table_catalog = %(table_catalog)s
+                   AND table_name = %(table_name)s
+                 ORDER BY table_name, column_name;"""
         return self.cmd_str(sql, {'schema_name': schema_name,
                                   "table_name": table_name,
                                   "table_catalog": catalog})
