@@ -51,21 +51,20 @@ class PostgresDB(object):
         cmd = self.translator.delete(table=table, where_equals=where)
         return self.executor.execute_void(cmd)
 
-    def update(self, table: str, updates:dict, where: dict):
+    def update(self, table: str, updates: dict, where: dict):
         cmd = self.translator.update(table=table, updates=updates, where_equals=where)
         return self.executor.execute_void(cmd)
 
     def select(self, table, where: dict = None,
                less_then: dict = None,
                greater_than: dict = None,
-               take=None, order_by=None, desc=False, column_string="*", skip:int=0):
+               take=None, order_by=None, column_string="*", skip: int = 0):
         cmd = self.translator.read(table=table, equals=where,
                                    greater_than=greater_than,
                                    less_than=less_then,
                                    take=take,
                                    skip=skip,
                                    order_by=order_by,
-                                   desc=desc,
                                    column_string=column_string)
         return self.executor.execute_reader(cmd)
 
@@ -76,16 +75,16 @@ class PostgresDB(object):
             return int(val)
         return 0
 
-    def read(self, raw_sql, raw_params:dict = None):
+    def read(self, raw_sql, raw_params: dict = None):
         cmd = self.translator.cmd_str(sql_cmd=raw_sql, vals=raw_params or {})
         return self.executor.execute_reader(cmd)
 
-    def read_first(self, raw_sql, raw_params:dict = None):
+    def read_first(self, raw_sql, raw_params: dict = None):
         cmd = self.translator.cmd_str(sql_cmd=raw_sql, vals=raw_params or {})
         r = self.executor.execute_reader(cmd)
         return r[0] if r else None
 
-    def void(self, raw_sql, raw_params:dict = None):
+    def void(self, raw_sql, raw_params: dict = None):
         cmd = self.translator.cmd_str(sql_cmd=raw_sql, vals=raw_params or {})
         return self.executor.execute_void(cmd)
 
@@ -96,31 +95,30 @@ class PostgresDB(object):
             return possibles[0]
         return None
 
-    def add_column(self, table, column:DbColumnDefinition):
+    def add_column(self, table, column: DbColumnDefinition):
         return self.void(f"""ALTER TABLE {table} ADD {column}""")
 
-    def drop_column(self, table, column:DbColumnDefinition):
+    def drop_column(self, table, column: DbColumnDefinition):
         return self.void(f"""ALTER TABLE {table} DROP {column.name}""")
 
-    def alter_column_type(self, table, column:DbColumnDefinition):
-        return self.void(f"""ALTER TABLE {table} ALTER {column.name} TYPE {column.data_type} USING {column.name}::{column.data_type}""")
+    def alter_column_type(self, table, column: DbColumnDefinition):
+        return self.void(
+            f"""ALTER TABLE {table} ALTER {column.name} TYPE {column.data_type} USING {column.name}::{column.data_type}""")
 
-    def alter_column_nullable(self, table, column:DbColumnDefinition):
+    def alter_column_nullable(self, table, column: DbColumnDefinition):
         if column.nullable:
             return self.void(f"""ALTER TABLE {table} ALTER {column.name} DROP NOT NULL""")
         else:
             return self.void(f"""ALTER TABLE {table} ALTER {column.name} SET NOT NULL""")
 
-    def remove_column(self, table, column:DbColumnDefinition):
+    def remove_column(self, table, column: DbColumnDefinition):
         return self.void(f"""ALTER TABLE {table} DROP {column}""")
-
-
 
     def register_table(self, table: DbTableDefinition):
         self.registered_tables.append(table)
         return table
 
-    def register_procedure_script(self, script:DbStoredProcedureScript):
+    def register_procedure_script(self, script: DbStoredProcedureScript):
         self.registered_scripts.append(script)
         return script
 
@@ -134,7 +132,7 @@ class PostgresDB(object):
         for s in self.registered_scripts:
             self.void(s.script)
 
-    def query_columns_schemas(self, table:DbTableDefinition):
+    def query_columns_schemas(self, table: DbTableDefinition):
         """Go to the database and get the schema info for the version of this table
         that is already created in the database"""
         cmd = self.translator.get_table_schema(
@@ -155,12 +153,12 @@ class PostgresDB(object):
             ))
         return columns
 
-    def resolve_table_differences(self, table:DbTableDefinition, interactive=True):
+    def resolve_table_differences(self, table: DbTableDefinition, interactive=True):
         database_columns = self.query_columns_schemas(table)
         database_table = DbTableDefinition(name=table.name, column_definitions=database_columns, schema=table.schema)
         differences = []
 
-        def bool_answer(prompt:str):
+        def bool_answer(prompt: str):
             if not interactive:
                 return True
             a = input(prompt)
@@ -193,7 +191,3 @@ class PostgresDB(object):
                             self.alter_column_nullable(table, local_column)
 
         return differences
-
-
-
-

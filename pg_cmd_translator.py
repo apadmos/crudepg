@@ -110,7 +110,7 @@ class PgCmdTranslator(object):
 
     def read(self, table, equals: dict = None,
              less_than: dict = None, greater_than: dict = None, take: int = None,
-             order_by=None, desc=False, column_string="*", skip: int = 0):
+             order_by=None, column_string="*", skip: int = 0):
         skip = f" OFFSET {skip}" if skip else ""
         take = f" LIMIT {take}" if take else ""
         if order_by:
@@ -118,7 +118,6 @@ class PgCmdTranslator(object):
             if not isinstance(order_by, str):
                 order_by = ",".join(order_by)
         order_by = f" ORDER BY {order_by}" if order_by else ""
-        desc = " DESC" if desc else " ASC" if order_by else ""
 
         params = {}
         conditions = []
@@ -133,7 +132,7 @@ class PgCmdTranslator(object):
         else:
             where = ""
 
-        cmd = f"SELECT {column_string} FROM {table}{where}{order_by}{desc}{skip}{take};"
+        cmd = f"SELECT {column_string} FROM {table}{where}{order_by}{skip}{take};"
 
         return self.cmd_str(cmd, params)
 
