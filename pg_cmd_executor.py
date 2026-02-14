@@ -30,7 +30,7 @@ class PgCmdExecutor(object):
             self.con.close()
             self.con = None
 
-    def execute_reader(self, cmd: DbCmd):
+    def execute_reader(self, cmd: DbCmd, commit=False):
         was_con = bool(self.con)
         try:
             if not was_con:
@@ -46,6 +46,8 @@ class PgCmdExecutor(object):
                     col_name = self.cur.description[i].name
                     d[col_name] = r[i]
                 rows.append(d)
+            if commit:
+                self.con.commit()
             return rows
         except Exception as ex:
             print(f"{cmd.cmd} {cmd.params_str}")

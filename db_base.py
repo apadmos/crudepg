@@ -75,13 +75,13 @@ class PostgresDB(object):
             return int(val)
         return 0
 
-    def read(self, raw_sql, raw_params: dict = None):
+    def read(self, raw_sql, raw_params: dict = None, commit=False):
         cmd = self.translator.cmd_str(sql_cmd=raw_sql, vals=raw_params or {})
-        return self.executor.execute_reader(cmd)
+        return self.executor.execute_reader(cmd, commit=commit)
 
-    def read_first(self, raw_sql, raw_params: dict = None):
+    def read_first(self, raw_sql, raw_params: dict = None, commit=False):
         cmd = self.translator.cmd_str(sql_cmd=raw_sql, vals=raw_params or {})
-        r = self.executor.execute_reader(cmd)
+        r = self.executor.execute_reader(cmd, commit=commit)
         return r[0] if r else None
 
     def void(self, raw_sql, raw_params: dict = None):
