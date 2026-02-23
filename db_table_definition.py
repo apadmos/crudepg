@@ -12,6 +12,7 @@ class DbColumnDefinition(object):
                  nullable: bool = False,
                  is_primary_key: bool = False,
                  is_unique: bool = False,
+                 default=None,
                  length: int = 0):
         self.name = name
         if name in DbColumnDefinition.RESERVED:
@@ -22,11 +23,13 @@ class DbColumnDefinition(object):
         self.is_primary_key = is_primary_key
         self.is_unique = is_unique
         self.length = length
+        self.default = default
 
     def __str__(self):
         null = "NULL" if self.nullable else "NOT NULL"
         type = f"{self.data_type}({self.length})" if self.length else self.data_type
-        return f"{self.name} {type} {null}"
+        default = f"default {self.default}" if self.default else ""
+        return f"{self.name} {type} {default} {null}"
 
     def __eq__(self, other):
         return str(self).__eq__(str(other))
@@ -55,6 +58,7 @@ class DbTableDefinition(object):
 
     def get_unique_columns(self):
         return filter(lambda f: f.is_unique, self.column_definitions)
+
     def __str__(self):
         if self.schema:
             return f"{self.schema}.{self.name}"
