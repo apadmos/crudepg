@@ -56,7 +56,7 @@ class PgCmdExecutor(object):
             if not was_con:
                 self.dispose()
 
-    def execute_void(self, cmd: DbCmd):
+    def execute_void(self, cmd: DbCmd, returning: list[str] = None):
         was_con = bool(self.con)
         try:
             if not was_con:
@@ -65,6 +65,12 @@ class PgCmdExecutor(object):
                 self.cur.execute(cmd.cmd, cmd.params_dict)
             else:
                 self.cur.execute(cmd.cmd)
+            if returning:
+                one = self.cur.fetchone()
+                r = {}
+                for i, name in enumerate(returning):
+                    r[name] = one[i]
+                return r
             self.con.commit()
         except Exception:
             if cmd:

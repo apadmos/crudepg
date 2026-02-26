@@ -43,9 +43,9 @@ class PostgresDB(object):
             self.executor.execute_void(self.translator.cmd_str(script))
         return tr
 
-    def insert(self, table: str, data: dict):
-        cmd = self.translator.insert(table=table, data=data)
-        return self.executor.execute_void(cmd)
+    def insert(self, table: str, data: dict, returning: list[str] = None):
+        cmd = self.translator.insert(table=table, data=data, returning=returning)
+        return self.executor.execute_void(cmd, returning=returning)
 
     def delete(self, table: str, where: dict):
         cmd = self.translator.delete(table=table, where_equals=where)

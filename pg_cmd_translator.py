@@ -68,11 +68,13 @@ class PgCmdTranslator(object):
         constraints = ", " + ", ".join(constraints) if constraints else ""
         return self.cmd_str(f"CREATE TABLE {table} ({columns}{constraints});")
 
-    def insert(self, table: str, data: dict):
+    def insert(self, table: str, data: dict, returning: list[str] = None):
         keys = sorted(data.keys())
         params = ", ".join([f"to_tsvector(%({k})s)" if str(k).startswith('searchable') else f"%({k})s" for k in keys])
         keys = ", ".join(keys)
-        return self.cmd_str(f"INSERT INTO {table} ({keys}) VALUES ({params})", data)
+        returning = f" RETURNING {", ".join(returning)}" if returning else ""
+
+        return self.cmd_str(f"INSERT INTO {table} ({keys}) VALUES ({params}){returning};", data)
 
     def delete(self, table: str, where_equals: dict):
         keys = [f'{k} = %({k})s' for k in where_equals.keys()]
