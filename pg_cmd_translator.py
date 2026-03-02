@@ -60,9 +60,13 @@ class PgCmdTranslator(object):
             pk = ", ".join([c.name for c in primary_key_columns])
             constraints.append(f"CONSTRAINT {table.name}_pk PRIMARY KEY ({pk})")
 
-        unique_columns = list(table.get_unique_columns())
-        if unique_columns:
-            unique = f"CONSTRAINT {table.name}_unique UNIQUE({','.join([c.name for c in unique_columns])})"
+        unique_columns = list(table.get_unique_columns() or [])
+        for column in unique_columns:
+            unique = f"CONSTRAINT {table.name}_unique_{column.name} UNIQUE({column.name})"
+            constraints.append(unique)
+
+        for column_set in table.unique_constraints or []:
+            unique = f"CONSTRAINT {table.name}_unique_{column_set.replace(",", "_")} UNIQUE({column_set})"
             constraints.append(unique)
 
         constraints = ", " + ", ".join(constraints) if constraints else ""
