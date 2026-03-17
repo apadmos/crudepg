@@ -1,0 +1,2 @@
+NULL = "__CONST_IS_NULL__"
+NOT_NULL = "__CONST_NOT_NULL__"

@@ -1,6 +1,7 @@
 import json
 import re
 
+from .const import NULL, NOT_NULL
 from .db_cmd import DbCmd
 from .db_table_definition import DbTableDefinition
 
@@ -111,8 +112,14 @@ class PgCmdTranslator(object):
                         raise Exception(f"Unhandled type hint {modifier}")
                     params_collector[f"{prefix}_{lk}"] = params[k]
                 else:
-                    statement_collector.append(f"{k} {separator} %({prefix}_{k})s")
-                    params_collector[f"{prefix}_{k}"] = params[k]
+                    value = params[k]
+                    if value == NULL:
+                        statement_collector.append(f"{k} IS NULL")
+                    elif value == NOT_NULL:
+                        statement_collector.append(f"{k} IS NOT NULL")
+                    else:
+                        statement_collector.append(f"{k} {separator} %({prefix}_{k})s")
+                        params_collector[f"{prefix}_{k}"] = params[k]
 
     def read(self, table, equals: dict = None,
              less_than: dict = None, greater_than: dict = None, take: int = None,
