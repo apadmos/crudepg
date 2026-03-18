@@ -114,9 +114,15 @@ class PgCmdTranslator(object):
                 else:
                     value = params[k]
                     if value == NULL:
-                        statement_collector.append(f"{k} IS NULL")
+                        if prefix == "where":
+                            statement_collector.append(f"{k} IS NULL")
+                        else:
+                            statement_collector.append(f"{k} = NULL")
                     elif value == NOT_NULL:
-                        statement_collector.append(f"{k} IS NOT NULL")
+                        if prefix == "where":
+                            statement_collector.append(f"{k} IS NOT NULL")
+                        else:
+                            statement_collector.append(f"{k} = NOT NULL")
                     else:
                         statement_collector.append(f"{k} {separator} %({prefix}_{k})s")
                         params_collector[f"{prefix}_{k}"] = params[k]
