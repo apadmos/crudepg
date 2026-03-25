@@ -1,6 +1,7 @@
 class DbColumnDefinition(object):
     TYPE_MAPPING = {
         "INT4": "INT",
+        "INT8": "BIGINT",
         "INTEGER": "INT",
         "BOOLEAN": "BOOL",
     }

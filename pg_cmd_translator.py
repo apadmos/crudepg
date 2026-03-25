@@ -14,9 +14,8 @@ class PgCmdTranslator(object):
             hit = match[0]
             return f"%({hit[1:]})s"
 
-        sql_cmd = re.sub(r"[@:?]\w+", replacement, sql_cmd)
-
         if vals:
+            sql_cmd = re.sub(r"[@:?]\w+", replacement, sql_cmd)
             flattened = json.dumps(vals, default=str)
             parsed = json.loads(flattened)
             return DbCmd(sql_cmd, params=flattened, params_parsed=parsed)
