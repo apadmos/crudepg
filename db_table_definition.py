@@ -1,11 +1,4 @@
 class DbColumnDefinition(object):
-    TYPE_MAPPING = {
-        "INT4": "INT",
-        "INT8": "BIGINT",
-        "INTEGER": "INT",
-        "BOOLEAN": "BOOL",
-    }
-
     RESERVED = {"user", "object"}
 
     def __init__(self, name: str,
@@ -13,24 +6,30 @@ class DbColumnDefinition(object):
                  nullable: bool = False,
                  is_primary_key: bool = False,
                  is_unique: bool = False,
-                 default=None,
-                 length: int = 0):
+                 default=None
+                 ):
         self.name = name
         if name in DbColumnDefinition.RESERVED:
             self.name = f"\"{name}\""
         self.data_type = data_type.upper()
-        self.data_type = self.TYPE_MAPPING.get(self.data_type) or self.data_type
+        self.data_type = self.data_type
         self.nullable = nullable
         self.is_primary_key = is_primary_key
         self.is_unique = is_unique
-        self.length = length
         self.default = default
+
+    def copy(self):
+        return DbColumnDefinition(name=self.name,
+                                  data_type=self.data_type,
+                                  nullable=self.nullable,
+                                  is_primary_key=self.is_primary_key,
+                                  is_unique=self.is_unique,
+                                  default=self.default)
 
     def __str__(self):
         null = "NULL" if self.nullable else "NOT NULL"
-        type = f"{self.data_type}({self.length})" if self.length else self.data_type
         default = f"default {self.default}" if self.default else ""
-        return f"{self.name} {type} {default} {null}"
+        return f"{self.name} {self.data_type} {default} {null}"
 
     def __eq__(self, other):
         return str(self).__eq__(str(other))

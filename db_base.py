@@ -143,15 +143,43 @@ class PostgresDB(object):
             type = info["udt_name"]
             nulls = info['is_nullable'] == "NO"
             name = info["column_name"]
-            length = int(info.get('character_octet_length') or 0)
-            length = 0 if length == 1073741824 else length
+            if "int" in type:
+                type = type
+            elif info["numeric_precision"]:
+                type = f"""{type}({info["numeric_precision"]},{info["numeric_scale"]})"""
+            elif info["character_maximum_length"]:
+                type = f"""{type}({info["character_maximum_length"]})"""
+
             columns.append(DbColumnDefinition(
                 data_type=type,
                 nullable=not nulls,
-                name=name,
-                length=length
+                name=name
             ))
         return columns
+
+    TYPE_SYNONYMS = {
+        "INT4": "INT",
+        "INT8": "BIGINT",
+        "INTEGER": "INT",
+        "BOOLEAN": "BOOL",
+        "DECIMAL": "NUMERIC"
+    }
+
+    def normalize_type(self, data_type: str) -> str:
+
+        data_type = data_type.strip().upper()
+        if "(" in data_type:
+            base, params = data_type.split("(", 1)
+            base = base.strip()
+            params = "(" + params.strip()
+        else:
+            base = data_type
+            params = None
+
+        base = self.TYPE_SYNONYMS.get(base, base)
+        if params:
+            return f"{base}{params}"
+        return base
 
     def resolve_table_differences(self, table: DbTableDefinition, interactive=True):
         database_columns = self.query_columns_schemas(table)
@@ -173,6 +201,12 @@ class PostgresDB(object):
                 local_column = table.get_column(column_name)
                 remote_column = database_table.get_column(column_name)
 
+                normalized_local_column = local_column.copy()
+                normalized_remote_column = remote_column.copy()
+
+                normalized_local_column.data_type = self.normalize_type(local_column.data_type)
+                normalized_remote_column.data_type = self.normalize_type(remote_column.data_type)
+
                 if local_column and not remote_column:
                     print(f"MISSING {local_column} in database.")
                     if bool_answer(f"Attempt to add column? (y/n)"):
@@ -182,7 +216,7 @@ class PostgresDB(object):
                     print(f"Database has extra column {remote_column} in database")
                     if bool_answer(f"Attempt to drop column? (y/n)"):
                         self.drop_column(table, remote_column)
-                elif remote_column != local_column:
+                elif normalized_remote_column != normalized_local_column:
                     print(f"SCHEMA FOR {local_column} is different from {remote_column}")
                     if bool_answer(f"Attempt to alter column? (y/n)"):
                         if local_column.data_type != remote_column.data_type or local_column.length != remote_column.length:
