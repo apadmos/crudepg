@@ -56,12 +56,8 @@ class PostgresDB(object):
         return self.executor.execute_void(cmd)
 
     def select(self, table, where: dict = None,
-               less_then: dict = None,
-               greater_than: dict = None,
                take=None, order_by=None, column_string="*", skip: int = 0):
-        cmd = self.translator.read(table=table, equals=where,
-                                   greater_than=greater_than,
-                                   less_than=less_then,
+        cmd = self.translator.read(table=table, where=where,
                                    take=take,
                                    skip=skip,
                                    order_by=order_by,
@@ -89,7 +85,7 @@ class PostgresDB(object):
         return self.executor.execute_void(cmd)
 
     def first(self, table, where: dict = None):
-        cmd = self.translator.read(table=table, equals=where, take=1)
+        cmd = self.translator.read(table=table, where=where, take=1)
         possibles = self.executor.execute_reader(cmd)
         if possibles:
             return possibles[0]

@@ -97,19 +97,23 @@ class PgCmdTranslator(object):
                             f'SET {", ".join(ups)}'
                             f' WHERE {"AND ".join(wheres)}', params)
 
-    def _to_param_dict(self, params: dict, prefix: str, statement_collector: list, separator: str,
+    def _to_param_dict(self, params: dict, prefix: str, statement_collector: list, default_comparison: str,
                        params_collector: dict):
         if params:
+            count = -1
             for k in params.keys():
+                count += 1
+                param_key = f"{prefix}_{k.split(" ")[0]}_{count}"
                 if " " in k:
                     parts = k.split()
                     lk = parts[0]
                     modifier = parts[1]
                     if modifier == "tsvector":
-                        statement_collector.append(f"{lk} {separator} to_tsvector('english', %({prefix}_{lk})s)")
+                        statement_collector.append(
+                            f"{lk} @@ to_tsvector('english', %({param_key})s)")
                     else:
-                        raise Exception(f"Unhandled type hint {modifier}")
-                    params_collector[f"{prefix}_{lk}"] = params[k]
+                        statement_collector.append(f"{lk} {modifier} %({param_key})s")
+                    params_collector[param_key] = params[k]
                 else:
                     value = params[k]
                     if value == NULL:
@@ -123,11 +127,10 @@ class PgCmdTranslator(object):
                         else:
                             statement_collector.append(f"{k} = NOT NULL")
                     else:
-                        statement_collector.append(f"{k} {separator} %({prefix}_{k})s")
-                        params_collector[f"{prefix}_{k}"] = params[k]
+                        statement_collector.append(f"{k} {default_comparison} %({param_key})s")
+                        params_collector[param_key] = params[k]
 
-    def read(self, table, equals: dict = None,
-             less_than: dict = None, greater_than: dict = None, take: int = None,
+    def read(self, table, where: dict = None, take: int = None,
              order_by=None, column_string="*", skip: int = 0):
         skip = f" OFFSET {skip}" if skip else ""
         take = f" LIMIT {take}" if take else ""
@@ -140,9 +143,7 @@ class PgCmdTranslator(object):
         params = {}
         conditions = []
 
-        self._to_param_dict(equals, 'where', conditions, '=', params)
-        self._to_param_dict(greater_than, 'gt', conditions, '>', params)
-        self._to_param_dict(less_than, 'lt', conditions, '<', params)
+        self._to_param_dict(where, 'where', conditions, '=', params)
 
         if conditions:
             j = " AND ".join(conditions)
