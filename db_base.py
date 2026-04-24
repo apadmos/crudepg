@@ -1,5 +1,9 @@
+import argparse
+import sys
+
 import psycopg2
 
+import fancycli
 from .db_stored_procedure_script import DbStoredProcedureScript
 from .db_table_definition import DbTableDefinition, DbColumnDefinition
 from .pg_cmd_executor import PgCmdExecutor
@@ -221,3 +225,31 @@ class PostgresDB(object):
                             self.alter_column_nullable(table, local_column)
 
         return differences
+
+    def cli_main(self):
+        parser = argparse.ArgumentParser(description="Make a DB schema change")
+        parser.add_argument('mode', choices=['recreate', 'resolve'])
+        if len(sys.argv) > 1:
+            args = parser.parse_args()
+            mode = args.mode
+        else:
+            mode = fancycli.get_user_choice(["recreate", "resolve"])
+
+        if mode == "recreate":
+
+            with self.__class__() as db:
+                db.drop_schema(db.schema)
+
+            with self.__class__() as db:
+                db.recreate_schema(db.schema)
+
+            with self.__class__() as db:
+                db.ensure_tables_and_scripts(db.schema)
+        elif mode == "resolve":
+
+            with self.__class__() as db:
+                for table in db.registered_tables:
+                    print(f"-----{table}-----")
+                    db.resolve_table_differences(table)
+        else:
+            fancycli.print_error(f"{mode} do what now?")
