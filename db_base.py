@@ -102,8 +102,11 @@ class PostgresDB(object):
         return self.void(f"""ALTER TABLE {table} DROP {column.name}""")
 
     def alter_column_type(self, table, column: DbColumnDefinition):
+        dt = column.data_type
+        if column.length:
+            dt += f"({column.length})"
         return self.void(
-            f"""ALTER TABLE {table} ALTER {column.name} TYPE {column.data_type} USING {column.name}::{column.data_type}""")
+            f"""ALTER TABLE {table} ALTER {column.name} TYPE {dt} USING {column.name}::{dt}""")
 
     def alter_column_nullable(self, table, column: DbColumnDefinition):
         if column.nullable:
@@ -201,12 +204,6 @@ class PostgresDB(object):
                 local_column = table.get_column(column_name)
                 remote_column = database_table.get_column(column_name)
 
-                normalized_local_column = local_column.copy()
-                normalized_remote_column = remote_column.copy()
-
-                normalized_local_column.data_type = self.normalize_type(local_column.data_type)
-                normalized_remote_column.data_type = self.normalize_type(remote_column.data_type)
-
                 if local_column and not remote_column:
                     print(f"MISSING {local_column} in database.")
                     if bool_answer(f"Attempt to add column? (y/n)"):
@@ -216,13 +213,20 @@ class PostgresDB(object):
                     print(f"Database has extra column {remote_column} in database")
                     if bool_answer(f"Attempt to drop column? (y/n)"):
                         self.drop_column(table, remote_column)
-                elif normalized_remote_column != normalized_local_column:
-                    print(f"SCHEMA FOR {local_column} is different from {remote_column}")
-                    if bool_answer(f"Attempt to alter column? (y/n)"):
-                        if local_column.data_type != remote_column.data_type or local_column.length != remote_column.length:
-                            self.alter_column_type(table, local_column)
-                        if local_column.nullable != remote_column.nullable:
-                            self.alter_column_nullable(table, local_column)
+                else:
+                    normalized_local_column = local_column.copy()
+                    normalized_remote_column = remote_column.copy()
+
+                    normalized_local_column.data_type = self.normalize_type(local_column.data_type)
+                    normalized_remote_column.data_type = self.normalize_type(remote_column.data_type)
+
+                    if normalized_remote_column != normalized_local_column:
+                        print(f"SCHEMA FOR {local_column} is different from {remote_column}")
+                        if bool_answer(f"Attempt to alter column? (y/n)"):
+                            if local_column.data_type != remote_column.data_type or local_column.length != remote_column.length:
+                                self.alter_column_type(table, local_column)
+                            if local_column.nullable != remote_column.nullable:
+                                self.alter_column_nullable(table, local_column)
 
         return differences
 
