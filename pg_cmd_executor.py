@@ -1,7 +1,7 @@
 import psycopg2
 
+from digest import Digest
 from .db_cmd import DbCmd
-from .digest import Digest
 
 
 class PgCmdExecutor(object):
