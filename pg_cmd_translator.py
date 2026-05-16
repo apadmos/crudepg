@@ -108,7 +108,10 @@ class PgCmdTranslator(object):
                     parts = k.split()
                     lk = parts[0]
                     modifier = parts[1]
-                    if modifier == "tsvector":
+                    if modifier.lower() == "in":
+                        statement_collector.append(
+                            f"{lk} = ANY(%({param_key})s)")
+                    elif modifier == "tsvector":
                         statement_collector.append(
                             f"{lk} @@ to_tsvector('english', %({param_key})s)")
                     else:
