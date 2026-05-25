@@ -61,6 +61,8 @@ class PostgresDB(object):
 
     def select(self, table, where: dict = None,
                take=None, order_by=None, column_string="*", skip: int = 0):
+        if not column_string:
+            column_string = "*"
         cmd = self.translator.read(table=table, where=where,
                                    take=take,
                                    skip=skip,
