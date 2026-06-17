@@ -18,12 +18,30 @@ class PostgresDB(object):
         self.registered_tables = []
         self.registered_scripts = []
 
+    _shared_connection = None
+
+    @classmethod
+    def open_shared_connection(cls):
+        instance = cls()
+        instance.executor.connect()
+        cls._shared_connection = instance.executor
+
+    @classmethod
+    def close_shared_connection(cls):
+        if cls._shared_connection:
+            cls._shared_connection.dispose()
+            cls._shared_connection = None
+
     def __enter__(self):
-        self.executor.connect()
+        if self.__class__._shared_connection:
+            self.executor = self.__class__._shared_connection
+        else:
+            self.executor.connect()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.executor.dispose()
+        if self.executor is not self.__class__._shared_connection:
+            self.executor.dispose()
 
     def drop_schema(self, schema):
         cmd = self.translator.drop_schema(schema)
