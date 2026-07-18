@@ -252,12 +252,15 @@ class PostgresDB(object):
 
     def cli_main(self):
         parser = argparse.ArgumentParser(description="Make a DB schema change")
-        parser.add_argument('mode', choices=['recreate', 'resolve'])
+        parser.add_argument('mode', choices=['recreate', 'resolve', 'skip'])
         if len(sys.argv) > 1:
             args = parser.parse_args()
             mode = args.mode
         else:
             mode = fancycli.get_user_choice(["recreate", "resolve"])
+
+        if mode == "skip":
+            return
 
         if mode == "recreate":
 
