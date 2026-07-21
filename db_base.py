@@ -257,7 +257,7 @@ class PostgresDB(object):
             args = parser.parse_args()
             mode = args.mode
         else:
-            mode = fancycli.get_user_choice(["recreate", "resolve"])
+            mode = fancycli.get_user_choice(["recreate", "resolve", "skip"])
 
         if mode == "skip":
             return
