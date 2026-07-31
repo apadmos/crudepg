@@ -12,8 +12,11 @@ from .pg_cmd_translator import PgCmdTranslator
 
 class PostgresDB(object):
 
-    def __init__(self, host, user, password, database):
-        self.executor = PgCmdExecutor(host=host, user=user, password=password, database=database)
+    def __init__(self, host, user, password, database, port=5432):
+        self.executor = PgCmdExecutor(host=host, user=user,
+                                      password=password,
+                                      database=database,
+                                      port=port)
         self.translator = PgCmdTranslator()
         self.registered_tables = []
         self.registered_scripts = []

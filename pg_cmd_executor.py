@@ -6,11 +6,13 @@ from .db_cmd import DbCmd
 
 class PgCmdExecutor(object):
 
-    def __init__(self, host='127.0.0.1', user='postgres', password=None, database='postgres'):
+    def __init__(self, host='127.0.0.1', user='postgres',
+                 password=None, database='postgres', port=5432):
         self.host = host
         self.user = user
         self.password = password
         self.database = database
+        self.port = port
         self.con = None
         self.cur = None
 
@@ -19,7 +21,8 @@ class PgCmdExecutor(object):
         self.con = psycopg2.connect(dbname=self.database,
                                     host=self.host,
                                     user=self.user,
-                                    password=self.password)
+                                    password=self.password,
+                                    port=self.port)
         self.cur = self.con.cursor()
 
     def dispose(self):
