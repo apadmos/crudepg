@@ -92,10 +92,9 @@ class PgCmdTranslator(object):
 
         self._to_param_dict(updates, 'set', ups, '=', params)
         self._to_param_dict(where_equals, 'where', wheres, '=', params)
-
-        return self.cmd_str(f'UPDATE {table} '
-                            f'SET {", ".join(ups)}'
-                            f' WHERE {"AND ".join(wheres)}', params)
+        where = f' WHERE {"AND ".join(wheres)}' if wheres else ''
+        return self.cmd_str(f"""UPDATE {table} SET {", ".join(ups)} {where};"""
+                            , params)
 
     def _to_param_dict(self, params: dict, prefix: str, statement_collector: list, default_comparison: str,
                        params_collector: dict):
