@@ -152,15 +152,18 @@ class PostgresDB(object):
         self.registered_scripts.append(script)
         return script
 
-    def ensure_tables_and_scripts(self, mute=True):
+    def run_scripts(self):
+        for s in self.registered_scripts:
+            script = s.script if hasattr(s, "script") else str(s)
+            self.void(script)
+
+    def ensure_tables(self, mute=True):
         for t in self.registered_tables:
             try:
                 print(self.create_table(t).cmd)
             except psycopg2.errors.DuplicateTable:
                 if not mute:
                     print(f"table {t.name} already exists")
-        for s in self.registered_scripts:
-            self.void(s.script)
 
     def query_columns_schemas(self, table: DbTableDefinition):
         """Go to the database and get the schema info for the version of this table
@@ -267,7 +270,7 @@ class PostgresDB(object):
             args = parser.parse_args()
             mode = args.mode
         else:
-            mode = fancycli.get_user_choice(["recreate", "resolve", "skip"])
+            mode = fancycli.get_user_choice(["recreate", "resolve", "run scripts", "skip"])
 
         if mode == "skip":
             return
@@ -281,7 +284,12 @@ class PostgresDB(object):
                 db.recreate_schema(db.schema)
 
             with self.__class__() as db:
-                db.ensure_tables_and_scripts(db.schema)
+                db.ensure_tables(db.schema)
+
+        elif mode in ("run scripts", "recreate"):
+            with self.__class__() as db:
+                db.run_scripts()
+
         elif mode == "resolve":
 
             with self.__class__() as db:
