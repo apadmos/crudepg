@@ -148,6 +148,10 @@ class PostgresDB(object):
         self.registered_scripts.append(script)
         return script
 
+    def register_script(self, script: str):
+        self.registered_scripts.append(script)
+        return script
+
     def ensure_tables_and_scripts(self, mute=True):
         for t in self.registered_tables:
             try:
@@ -169,6 +173,7 @@ class PostgresDB(object):
             type = info["udt_name"]
             nulls = info['is_nullable'] == "NO"
             name = info["column_name"]
+            default = info["column_default"]
             if "int" in type:
                 type = type
             elif info["numeric_precision"]:
@@ -179,7 +184,9 @@ class PostgresDB(object):
             columns.append(DbColumnDefinition(
                 data_type=type,
                 nullable=not nulls,
-                name=name
+                name=name,
+                raw_info=info,
+                default=default
             ))
         return columns
 

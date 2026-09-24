@@ -7,7 +7,8 @@ class DbColumnDefinition(object):
                  is_primary_key: bool = False,
                  is_unique: bool = False,
                  default=None,
-                 length=0
+                 length=0,
+                 raw_info="NA"
                  ):
         self.name = name
         if name in DbColumnDefinition.RESERVED:
@@ -19,6 +20,7 @@ class DbColumnDefinition(object):
         self.is_unique = is_unique
         self.default = default
         self.length = length
+        self.raw_info = raw_info
 
     def copy(self):
         return DbColumnDefinition(name=self.name,
