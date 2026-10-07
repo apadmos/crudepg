@@ -132,7 +132,7 @@ class PgCmdTranslator(object):
                         statement_collector.append(f"{k} {default_comparison} %({param_key})s")
                         params_collector[param_key] = params[k]
 
-    def read(self, table, where: dict = None, take: int = None,
+    def read(self, table, where: dict = None, take: int | None = None,
              order_by=None, column_string="*", skip: int = 0):
         skip = f" OFFSET {skip}" if skip else ""
         take = f" LIMIT {take}" if take else ""
