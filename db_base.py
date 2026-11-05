@@ -1,4 +1,5 @@
 import argparse
+import re
 import sys
 
 import psycopg2
@@ -191,6 +192,9 @@ class PostgresDB(object):
                 type = f"""{type}({info["numeric_precision"]},{info["numeric_scale"]})"""
             elif info["character_maximum_length"]:
                 type = f"""{type}({info["character_maximum_length"]})"""
+            """A generated column's udt_name is only its type; how it's generated is in two other columns"""
+            if info.get("is_generated") == "ALWAYS":
+                type = f"""{type} GENERATED ALWAYS AS ({info["generation_expression"]}) STORED"""
 
             columns.append(DbColumnDefinition(
                 data_type=type,
@@ -209,9 +213,18 @@ class PostgresDB(object):
         "DECIMAL": "NUMERIC"
     }
 
-    def normalize_type(self, data_type: str) -> str:
+    """The generated part of a column type, e.g. tsvector GENERATED ALWAYS AS (to_tsvector('english', body)) STORED"""
+    GENERATED_TYPE: re.Pattern = re.compile(r"\s+GENERATED\s+ALWAYS\s+AS\s*\(.*\)\s*STORED\s*$", re.DOTALL)
 
+    def normalize_type(self, data_type: str) -> str:
+        """A generated column compares as its type plus GENERATED. Postgres rewrites the expression it's given (adding
+        casts like 'english'::regconfig), so the expression can't be compared, and a change to it isn't caught"""
         data_type = data_type.strip().upper()
+        generated: str = ""
+        match = self.GENERATED_TYPE.search(data_type)
+        if match:
+            data_type = data_type[:match.start()]
+            generated = " GENERATED"
         if "(" in data_type:
             base, params = data_type.split("(", 1)
             base = base.strip()
@@ -222,8 +235,8 @@ class PostgresDB(object):
 
         base = self.TYPE_SYNONYMS.get(base, base)
         if params:
-            return f"{base}{params}"
-        return base
+            return f"{base}{params}{generated}"
+        return f"{base}{generated}"
 
     def resolve_table_differences(self, table: DbTableDefinition, interactive=True):
         database_columns = self.query_columns_schemas(table)
@@ -261,7 +274,12 @@ class PostgresDB(object):
                     normalized_local_column.data_type = self.normalize_type(local_column.data_type)
                     normalized_remote_column.data_type = self.normalize_type(remote_column.data_type)
 
-                    if normalized_remote_column != normalized_local_column:
+                    is_generated: bool = any(c.data_type.endswith(" GENERATED") for c in
+                                             (normalized_local_column, normalized_remote_column))
+                    if normalized_remote_column != normalized_local_column and is_generated:
+                        print(f"SCHEMA FOR {local_column} is different from {remote_column}")
+                        print("A generated column can't be altered in place: drop it and add it again by hand")
+                    elif normalized_remote_column != normalized_local_column:
                         print(f"SCHEMA FOR {local_column} is different from {remote_column}")
                         if bool_answer(f"Attempt to alter column? (y/n)"):
                             if local_column.data_type != remote_column.data_type or local_column.length != remote_column.length:

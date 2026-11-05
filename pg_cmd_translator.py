@@ -51,8 +51,10 @@ class PgCmdTranslator(object):
 
         columns = ', '.join([str(c) for c in table.column_definitions])
 
-        foreign_keys = map(lambda t: f"""CONSTRAINT fk_{t[0]}_{t[1].name}_{t[2]} FOREIGN KEY({t[0]})
-        REFERENCES {t[1]}({t[2]})""", table.fk_columns or [])
+        """A referenced table is a DbTableDefinition, or a "schema.table" string for one that isn't defined yet (a table
+        referring to itself)"""
+        foreign_keys = map(lambda t: f"""CONSTRAINT fk_{t[0]}_{getattr(t[1], "name", str(t[1]).split(".")[-1])}_{t[2]}
+        FOREIGN KEY({t[0]}) REFERENCES {t[1]}({t[2]})""", table.fk_columns or [])
 
         constraints = list(foreign_keys)
         primary_key_columns = list(table.get_primary_key_columns())
