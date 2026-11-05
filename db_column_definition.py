@@ -32,7 +32,8 @@ class DbColumnDefinition(object):
 
     def __str__(self):
         null = "NULL" if self.nullable else "NOT NULL"
-        default = f"default {self.default}" if self.default else ""
+        """0 and False are real defaults; only None (or "") means there isn't one"""
+        default = f"default {self.default}" if self.default not in (None, "") else ""
         data_type = self.data_type
         if self.length:
             data_type = f"{data_type}({self.length})"
