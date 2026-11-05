@@ -18,7 +18,6 @@ class PgCmdExecutor(object):
 
     def connect(self):
         self.dispose()
-        print("---psycopg2.connect called----")
         self.con = psycopg2.connect(dbname=self.database,
                                     host=self.host,
                                     user=self.user,
