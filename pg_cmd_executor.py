@@ -18,12 +18,24 @@ class PgCmdExecutor(object):
 
     def connect(self):
         self.dispose()
+        print("---psycopg2.connect called----")
         self.con = psycopg2.connect(dbname=self.database,
                                     host=self.host,
                                     user=self.user,
                                     password=self.password,
                                     port=self.port)
         self.cur = self.con.cursor()
+
+    def _rollback(self):
+        """After a failed statement Postgres refuses everything else in the transaction until it's rolled back. A
+        connection kept open (a shared one) stays usable that way; the failed transaction's work was lost anyway.
+        Never raises over the original error"""
+        if not self.con:
+            return
+        try:
+            self.con.rollback()
+        except Exception as rollback_error:
+            print(f"Rollback failed: {rollback_error!r}")
 
     def dispose(self):
         if self.cur:
@@ -54,6 +66,7 @@ class PgCmdExecutor(object):
             return rows
         except Exception as ex:
             print(f"{cmd.cmd} {cmd.params_str}")
+            self._rollback()
             raise ex
         finally:
             if not was_con:
@@ -78,6 +91,7 @@ class PgCmdExecutor(object):
         except Exception:
             if cmd:
                 print(f"!!! Error {cmd.cmd} {cmd.params_str} !!!")
+            self._rollback()
             raise
         finally:
             if not was_con:

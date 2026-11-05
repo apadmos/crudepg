@@ -22,22 +22,30 @@ class PostgresDB(object):
         self.registered_scripts = []
 
     _shared_connection = None
+    """Set by open_shared_connection: the next use connects, and that connection is shared until
+    close_shared_connection"""
+    _share_connection = False
 
     @classmethod
     def open_shared_connection(cls):
-        instance = cls()
-        instance.executor.connect()
-        cls._shared_connection = instance.executor
+        """Asks for one connection shared by every use until close_shared_connection. It only connects on the first
+        use, so something that never touches the database (a redirect, robots.txt) never connects"""
+        cls._share_connection = True
 
     @classmethod
     def close_shared_connection(cls):
+        cls._share_connection = False
         if cls._shared_connection:
             cls._shared_connection.dispose()
             cls._shared_connection = None
 
     def __enter__(self):
-        if self.__class__._shared_connection:
-            self.executor = self.__class__._shared_connection
+        cls = self.__class__
+        if cls._share_connection and not cls._shared_connection:
+            self.executor.connect()
+            cls._shared_connection = self.executor
+        if cls._shared_connection:
+            self.executor = cls._shared_connection
         else:
             self.executor.connect()
         return self
